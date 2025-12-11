@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V-Price – Predict Used Car Prices</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Chart.js for plotting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+
+<body class="bg-gray-100 font-serif antialiased">
+  <!-- Header -->
+  <header class="bg-white shadow-sm rounded-t-lg p-4 mx-auto max-w-7xl">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fas fa-car text-teal-700 text-xl"></i>
+        <h1 class="text-xl font-bold text-gray-800">V-Price</h1>
+      </div>
+      <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <a href="#" class="text-gray-600 hover:text-teal-700">Home</a>
+      </nav>
+      <button class="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium">
+        Try Demo
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-6 max-w-7xl">
+    <!-- Hero Section -->
+    <section class="mb-8 flex flex-col lg:flex-row gap-8">
+      <!-- Left: Text & Form -->
+      <div class="lg:w-1/2">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+          Predict Used Car Prices in Seconds
+        </h2>
+        <p class="text-gray-600 mb-6">
+          Enter brand, year, mileage & condition — get reliable price estimate
+          powered by scikit-learn.
+        </p>
+
+        <!-- Input Form -->
+        <div class="bg-white p-5 rounded-lg shadow mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+              <div class="relative">
+                <i class="fas fa-car absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <select id="brand"
+                  class="w-full pl-10 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+                  <option value="">Select</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <input type="number" id="year" min="2000" max="2025" placeholder="2020"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+              <div class="flex space-x-4">
+                <label class="inline-flex items-center">
+                  <input type="radio" name="condition" value="Fair" class="mr-2" />
+                  Fair
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="condition" value="Good" class="mr-2" checked />
+                  Good
+                </label>
+                <label class="inline-flex items-center">
+                  <input type="radio" name="condition" value="Excellent" class="mr-2" />
+                  Excellent
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mileage (in km)</label>
+              <input type="number" id="mileage" placeholder="50000"
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            </div>
+          </div>
+          <button id="predictBtn"
+            class="w-full bg-teal-700 hover:bg-teal-800 text-white py-2 rounded-md font-medium mt-4">
+            Get Estimate
+          </button>
+        </div>
+
+        <!-- Prediction Result -->
+        <div id="resultBox" class="hidden mt-4 p-4 bg-teal-700 text-white rounded text-center">
+          <p class="text-lg">Estimated Price:</p>
+          <p id="predictedPrice" class="text-2xl font-bold">₹0</p>
+        </div>
+      </div>
+
+      <!-- Right: Stats & Car Image -->
+      <div class="lg:w-1/2 flex flex-col">
+        <div class="bg-gray-200 rounded-lg overflow-hidden mb-4">
+          <img src="/static/images/car-hero.jpg" alt="Modern Gray Car" class="w-full h-auto rounded-lg" />
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="bg-white p-3 text-center rounded shadow">
+            <p class="text-xs text-gray-500">RMSE</p>
+            <p class="text-lg font-bold">1482</p>
+          </div>
+          <div class="bg-white p-3 text-center rounded shadow">
+            <p class="text-xs text-gray-500">Accuracy</p>
+            <p class="text-lg font-bold text-green-600">91% ↑</p>
+          </div>
+          <div class="bg-white p-3 text-center rounded shadow">
+            <p class="text-xs text-gray-500">Dataset size</p>
+            <p class="text-lg font-bold text-orange-600">50000</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Predictions Section -->
+    <section class="mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Scatter Plot -->
+        <div class="bg-white p-4 rounded-lg shadow">
+          <h4 class="font-semibold mb-3">Recent Predictions</h4>
+          <canvas id="scatterChart" height="200"></canvas>
+        </div>
+        <!-- Recent Predictions Table -->
+        <div class="bg-white p-4 rounded-lg shadow">
+          <h4 class="font-semibold mb-3">Recent Predictions</h4>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b">
+                <th class="text-left pb-1">Brand</th>
+                <th class="text-left pb-1">Year</th>
+                <th class="text-left pb-1">Mileage</th>
+                <th class="text-left pb-1">Condition</th>
+              </tr>
+            </thead>
+            <tbody id="recentTable">
+              <!-- Filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Music -->
+    <audio id="bgMusic" autoplay loop muted>
+      <source src="{{ url_for('static', filename='music/bg.mp3') }}" type="audio/mpeg" />
+    </audio>
+
+    <div id="musicToggle" class="music-btn">🔊</div>
+
+    <!-- Features Section -->
+    <section class="mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+          <div class="text-3xl mb-2">
+            <i class="fas fa-chart-line text-teal-700"></i>
+          </div>
+          <h4 class="font-bold mb-2">Accurate Estimates</h4>
+          <p class="text-gray-600 text-xs">
+            Leverage advanco of machbro kas mby works for pracles presisions
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+          <div class="text-3xl mb-2">
+            <i class="fas fa-bolt text-teal-700"></i>
+          </div>
+          <h4 class="font-bold mb-2">Fast Results</h4>
+          <p class="text-gray-600 text-xs">
+            Receivern saint price connecy, ve sach on your defictes details
+          </p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow text-center">
+          <div class="text-3xl mb-2">
+            <i class="fas fa-database text-teal-700"></i>
+          </div>
+          <h4 class="font-bold mb-2">Data Driven</h4>
+          <p class="text-gray-600 text-xs">
+            Utilities a redust delect to supposable and by do data valuations
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t py-4 mx-auto max-w-7xl">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <!-- Social Icons -->
+      <div class="flex space-x-4 text-xl">
+        <a href="https://www.instagram.com/mr_naitik_maurya/" target="_blank" class="text-gray-500 hover:text-teal-700">
+          <i class="fab fa-instagram"></i>
+        </a>
+
+        <a href="https://github.com/NAITIKK682" target="_blank" class="text-gray-500 hover:text-teal-700">
+          <i class="fab fa-github"></i>
+        </a>
+
+        <a href="https://www.linkedin.com/in/naitik-kushwaha/" target="_blank"
+          class="text-gray-500 hover:text-teal-700">
+          <i class="fab fa-linkedin"></i>
+        </a>
+      </div>
+
+      <!-- Designer Credit -->
+      <div class="text-sm text-gray-600">
+        Designed & Developed by
+        <span class="font-semibold text-teal-700">Naitik Kushwaha</span>
+      </div>
+
+      <!-- Footer Links -->
+      <div class="flex space-x-4 text-sm text-gray-600">
+        <a href="#" class="hover:text-teal-700">Privacy</a>
+        <a href="#" class="hover:text-teal-700">Terms</a>
+        <a href="mailto:naitikk682@gmail.com" class="hover:text-teal-700">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // INR formatter
+    function formatINR(num) {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(num);
+    }
+
+    // Load makes
+    fetch("/api/makes")
+      .then((res) => res.json())
+      .then((makes) => {
+        const select = document.getElementById("brand");
+        makes.forEach((make) => {
+          const opt = document.createElement("option");
+          opt.value = make;
+          opt.textContent = make;
+          select.appendChild(opt);
+        });
+      });
+
+    // Predict button
+    document
+      .getElementById("predictBtn")
+      .addEventListener("click", async () => {
+        const brand = document.getElementById("brand").value;
+        const year = parseInt(document.getElementById("year").value);
+        const mileage = parseFloat(document.getElementById("mileage").value);
+        const condition = document.querySelector(
+          'input[name="condition"]:checked'
+        ).value;
+
+        if (!brand || !year || !mileage) {
+          alert("Please fill all fields");
+          return;
+        }
+
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            make: brand,
+            year,
+            mileage_km: mileage,
+            condition,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
+
+        document.getElementById("predictedPrice").textContent = formatINR(
+          data.predicted_price_inr
+        );
+        document.getElementById("resultBox").classList.remove("hidden");
+
+        // Save to localStorage
+        const pred = {
+          brand,
+          year,
+          mileage,
+          condition,
+          price: data.predicted_price_inr,
+          ts: Date.now(),
+        };
+        let preds = JSON.parse(localStorage.getItem("vprice_preds") || "[]");
+        preds.unshift(pred);
+        if (preds.length > 4) preds.pop();
+        localStorage.setItem("vprice_preds", JSON.stringify(preds));
+        updateRecentTable();
+      });
+
+    function updateRecentTable() {
+      const tbody = document.getElementById("recentTable");
+      tbody.innerHTML = "";
+      const preds = JSON.parse(localStorage.getItem("vprice_preds") || "[]");
+      preds.forEach((p) => {
+        const row = `<tr>
+          <td>${p.brand}</td>
+          <td>${p.year}</td>
+          <td>${Number(p.mileage).toLocaleString()} km</td>
+          <td>${p.condition}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    // Initialize recent predictions
+    updateRecentTable();
+
+    // Load scatter plot
+    fetch("/static/data/test_predictions.csv")
+      .then((r) => r.text())
+      .then((text) => {
+        const lines = text.trim().split("\n").slice(1);
+        const data = lines.map((line) => {
+          const [actual, pred] = line.split(",");
+          return { x: +actual, y: +pred };
+        });
+
+        const ctx = document.getElementById("scatterChart").getContext("2d");
+        new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Actual vs Predicted",
+                data: data,
+                backgroundColor: "rgba(0, 121, 107, 0.6)",
+                borderColor: "rgba(0, 121, 107, 1)",
+                pointRadius: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { title: { display: true, text: "Actual Price (₹)" } },
+              y: { title: { display: true, text: "Predicted Price (₹)" } },
+            },
+          },
+        });
+      });
+
+    // Music controls
+    const audio = document.getElementById("bgMusic");
+    const btn = document.getElementById("musicToggle");
+
+    // Unmute on first click anywhere
+    document.addEventListener(
+      "click",
+      function () {
+        audio.muted = false;
+        audio.play();
+      },
+      { once: true }
+    );
+
+    // Play / Pause toggle button
+    btn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (audio.paused) {
+        audio.play();
+        btn.textContent = "🔊"; // sound on icon
+      } else {
+        audio.pause();
+        btn.textContent = "🔈"; // muted icon
+      }
+    });
+  </script>
+</body>
+
+</html>
